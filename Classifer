@@ -2,7 +2,7 @@
 from keras.models import Sequential
 from keras.utils import np_utils
 from keras.callbacks import ReduceLROnPlateau
-from keras.layers import Dense,Dropout,Flatten,Conv2D,MaxPool2D
+from keras.layers import Dense,Dropout,Flatten,Conv2D,MaxPool2D,LSTM
 from keras.optimizers import RMSprop
 import pandas as pd
 import numpy as np
@@ -110,25 +110,15 @@ X_train=X_train_gauss_result
 y_train=y_train_gauss_result
 ###
 
-###卷积网络
-X_train=X_train.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
-X_test=X_test.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
-###
+# ###卷积网络
+# X_train=X_train.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+# X_test=X_test.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+# ###
 
-###高斯噪音
-X_train_gauss_result=X_train
-y_train_gauss_result=y_train
-for i in range(gauss_num):
-    gauss=np.random.normal(0,var,[X_train.shape[0],X_train.shape[1]])
-    X_train_gauss=gauss+X_train
-    X_train_gauss_result=pd.concat([X_train_gauss_result,X_train_gauss])
-    y_train_gauss_result=np.vstack([y_train_gauss_result,y_train])
-X_train=X_train_gauss_result
-y_train=y_train_gauss_result
-###
-
-###学习率调整
-learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=3, verbose=1, factor=0.5, min_lr=0.00001)
+###时序网络
+X_train=X_train.values.reshape(-1,repeat,3)
+X_test=X_test.values.reshape(-1,repeat,3)
+# print(X_train.shape)
 ###
 
 ###学习率调整
@@ -137,13 +127,12 @@ learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=3, 
 
 dl=Sequential()
 
-###卷积网络
-dl.add(Conv2D(filters=32, kernel_size=(1,10), padding='Valid', activation='relu',input_shape=(1,repeat,3),name="conv1"))
-dl.add(MaxPool2D(pool_size=(1,4), strides=(1,1),name="pool1"))
-dl.add(Dropout(0.75))
+##时序网络
+dl.add(LSTM(units=64, input_shape=(repeat,3),activation='relu',return_sequences=True))
 dl.add(Flatten())
+dl.add(Dropout(0.5))
 dl.add(Dense(units=500, activation="relu", kernel_initializer="normal",name="den1"))
-dl.add(Dropout(0.75))
+dl.add(Dropout(0.5))
 ###
 
 # ###非卷积网络
@@ -153,23 +142,14 @@ dl.add(Dropout(0.75))
 # dl.add(Dropout(0.25))
 # ###
 
-# dl.add(Dense(units=40, activation="relu", kernel_initializer="normal",name="den2"))
+# dl.add(Dense(units=500, activation="relu", kernel_initializer="normal",name="den2"))
 # dl.add(Dropout(0.5))
 
 dl.add(Dense(units=10, activation="softmax", kernel_initializer="normal",name="den3"))
 dl.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
-dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=800,verbose=2,callbacks=[learning_rate_reduction])
+dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=50,batch_size=800,verbose=2,callbacks=[learning_rate_reduction])
 
 print(dl.summary())
 
 pd.crosstab(data_test.iloc[:,0],dl.predict_classes(X_test),rownames=['label'],colnames=['predict'])
 
-from keras.models import Model
-den3_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('den3').output)
-X_test = den3_layer_model.predict(X_test)
-X_train = den3_layer_model.predict(X_train)
-
-conv_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('conv').output)
-conv_output = conv_layer_model.predict(X_test)
-print(conv_output.shape)
-print(conv_output[0])
