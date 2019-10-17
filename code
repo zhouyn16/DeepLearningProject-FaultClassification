@@ -1,1 +1,49 @@
+#导入
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.utils import np_utils
+import pandas as pd
+import numpy as np
 
+###表格预处理
+def preprocess(table):
+    post_table=(table-np.mean(table))/np.std(table)
+    return post_table
+   
+#数据导入与合并
+data_train=pd.DataFrame(columns=['kind','De','Fe','Ba'])
+data_test=pd.DataFrame(columns=['kind','De','Fe','Ba'])
+data=pd.DataFrame(columns=['De','Fe','Ba'])
+print('数据导入：',end=' ')
+for i in range(10):
+    data_read_train=pd.read_csv('数据/%dtrain.csv'%i,index_col=0)
+    data_read_test=pd.read_csv('数据/%dtest.csv'%i,index_col=0)
+    data_read_train.insert(0,'kind',i)
+    data_read_test.insert(0,'kind',i)
+    
+    ###NA填充0
+    if i==0:
+        data_read_train.insert(3,'Ba',0)
+        data_read_test.insert(3,'Ba',0)
+    ###
+    
+    data_read_train.columns=['kind','De','Fe','Ba']
+    data_read_test.columns=['kind','De','Fe','Ba']
+    data_train=pd.concat([data_train,data_read_train.iloc[0:1000,:]])
+    data_test=pd.concat([data_test,data_read_test.iloc[0:100,:]])
+    print((i+1)/10,end=' ')
+
+###训练集与测试集
+data_train=data_train.sample(frac=1.0)
+data_train=data_train.reset_index(drop=True)
+X_train=preprocess(data_train.iloc[:,1:4])
+X_test=preprocess(data_test.iloc[:,1:4])
+y_train=np_utils.to_categorical(data_train.iloc[:,0])
+y_test=np_utils.to_categorical(data_test.iloc[:,0])
+
+dl=Sequential()
+dl.add(Dense(units=100, input_dim=3, activation="relu", kernel_initializer="normal"))
+dl.add(Dense(units=100, activation="relu", kernel_initializer="normal"))
+dl.add(Dense(units=10, activation="sigmoid", kernel_initializer="normal"))
+dl.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
+dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=1000,verbose=2)
