@@ -1,0 +1,19 @@
+import mat4py
+import pandas as pd
+import numpy as np
+
+for i in range(1,10):
+    wrong=i
+    X = mat4py.loadmat('dataset/%d.mat'%wrong)
+    data_test=pd.DataFrame({'test_DE_time':np.array(X.get('test_DE_time'))[:,0],'test_FE_time':np.array(X.get('test_FE_time'))[:,0],'test_BA_time':np.array(X.get('test_BA_time'))[:,0]})
+    data_train=pd.DataFrame({'train_DE_time':np.array(X.get('train_DE_time'))[:,0],'train_FE_time':np.array(X.get('train_FE_time'))[:,0],'train_BA_time':np.array(X.get('train_BA_time'))[:,0]})
+    data_test.to_csv('数据/%dtest.csv'%wrong)
+    data_train.to_csv('数据/%dtrain.csv'%wrong)
+    print(i,end='  ')
+    
+wrong=0
+X = mat4py.loadmat('dataset/%d.mat'%wrong)
+data_test=pd.DataFrame({'test_DE_time':np.array(X.get('test_DE_time'))[:,0],'test_FE_time':np.array(X.get('test_FE_time'))[:,0]})
+data_train=pd.DataFrame({'train_DE_time':np.array(X.get('train_DE_time'))[:,0],'train_FE_time':np.array(X.get('train_FE_time'))[:,0]})
+data_test.to_csv('数据/%dtest.csv'%wrong)
+data_train.to_csv('数据/%dtrain.csv'%wrong)
