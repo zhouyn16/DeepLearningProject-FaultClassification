@@ -8,9 +8,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ###预定义
+train_each=200
+test_each=200
 
 ###重复取样
 repeat=40
+###
+
+###mixup次数
+mixup_num=3
+###
+
+###高斯噪音方差
+var=0
+gauss_num=1
 ###
 
 def preprocess(table):
@@ -52,17 +63,44 @@ for i in range(10):
     data_read_test.insert(0,'kind',i)
     data_read_train.columns=columns_repeat
     data_read_test.columns=columns_repeat
-    data_train=pd.concat([data_train,data_read_train.iloc[0:1000,:]])
-    data_test=pd.concat([data_test,data_read_test.iloc[0:200,:]])
+    data_train=pd.concat([data_train,data_read_train.iloc[0:train_each,:]])
+    data_test=pd.concat([data_test,data_read_test.iloc[0:test_each,:]])
     print((i+1)/10,end=' ')
 
 ###训练集与测试集
-data_train=data_train.sample(frac=1.0)
-data_train=data_train.reset_index(drop=True)
+data_train=data_train.sample(frac=1.0).reset_index(drop=True)
 X_train=preprocess(data_train.iloc[:,1:])
 X_test=preprocess(data_test.iloc[:,1:])
 y_train=np_utils.to_categorical(data_train.iloc[:,0])
 y_test=np_utils.to_categorical(data_test.iloc[:,0])
+
+###mixup
+X_train_mixup_result=X_train
+y_train_mixup_result=y_train
+for i in range(mixup_num):
+    beta=np.random.beta(1,1,X_train.shape[0]).reshape(X_train.shape[0],1)
+    data_train_mixup=data_train.sample(frac=1.0).reset_index(drop=True)
+    X_train_mixup=preprocess(data_train_mixup.iloc[:,1:])
+    y_train_mixup=np_utils.to_categorical(data_train_mixup.iloc[:,0])
+    X_train_mixup=beta*X_train_mixup+(1-beta)*X_train
+    y_train_mixup=beta*y_train_mixup+(1-beta)*y_train
+    X_train_mixup_result=pd.concat([X_train_mixup_result,X_train_mixup])
+    y_train_mixup_result=np.vstack([y_train_mixup_result,y_train_mixup])
+X_train=X_train_mixup_result
+y_train=y_train_mixup_result
+###
+
+###高斯噪音
+X_train_gauss_result=X_train
+y_train_gauss_result=y_train
+for i in range(gauss_num):
+    gauss=np.random.normal(0,var,[X_train.shape[0],X_train.shape[1]])
+    X_train_gauss=gauss+X_train
+    X_train_gauss_result=pd.concat([X_train_gauss_result,X_train_gauss])
+    y_train_gauss_result=np.vstack([y_train_gauss_result,y_train])
+X_train=X_train_gauss_result
+y_train=y_train_gauss_result
+###
 
 ###学习率调整
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', patience=3, verbose=1, factor=0.5, min_lr=0.00001)
@@ -73,4 +111,4 @@ dl.add(Dense(units=500, input_dim=3*repeat, activation="relu", kernel_initialize
 dl.add(Dense(units=500, activation="relu", kernel_initializer="normal"))
 dl.add(Dense(units=10, activation="sigmoid", kernel_initializer="normal"))
 dl.compile(loss='mean_squared_error',optimizer='adam',metrics=['accuracy'])
-dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=1000,verbose=2,callbacks=[learning_rate_reduction])
+dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=50,batch_size=1000,verbose=2,callbacks=[learning_rate_reduction])
