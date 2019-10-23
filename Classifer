@@ -28,6 +28,17 @@ gauss_num=1
 def preprocess(table):
     post_table=(table-np.mean(table))/np.std(table)
     return post_table
+
+def evaluate(X_pred_label,y_test_label):
+    end=pd.DataFrame(columns=['recall','precision','F_score'])
+    for i in range(10):
+        TP=np.sum(np.array(X_pred_label==i)*np.array(y_test_label==i))
+        FP=np.sum(np.array(X_pred_label==i)*np.array(y_test_label!=i))
+        FN=np.sum(np.array(X_pred_label!=i)*np.array(y_test_label==i))
+        precise=TP/(TP+FP)
+        recall=TP/(TP+FN)
+        end.loc[i]=np.array([recall,precise,2*precise*recall/(precise+recall)])
+    return end
    
 #数据导入与合并
 try:
