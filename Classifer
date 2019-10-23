@@ -144,8 +144,9 @@ X_train=X_train.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
 X_test=X_test.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
 ###
 
-###学习率调整
+###学习率调整/提前终止
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=3, verbose=1, factor=0.5, min_lr=0.00001)
+EarlyStop=EarlyStopping(monitor='val_loss', patience=5)
 ###
 
 dl=Sequential()
@@ -171,7 +172,7 @@ dl.add(Dropout(0.75))
 
 dl.add(Dense(units=10, activation="softmax", kernel_initializer="normal",name="denf"))
 dl.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
-dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=800,verbose=2,callbacks=[learning_rate_reduction])
+dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=800,verbose=2,callbacks=[EarlyStop])
 
 print(dl.summary())
 
