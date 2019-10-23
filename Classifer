@@ -103,8 +103,8 @@ except:
     data_test.to_csv('数据/repeat%dtest.csv'%repeat)
 
 ###训练集与测试集
-data_train=data_train[data_train.kind!=0]
-data_test=data_test[data_test.kind!=0]
+data_train=data_train
+data_test=data_test
 data_train=data_train.sample(frac=1.0).reset_index(drop=True)
 X_train=preprocess(data_train.iloc[:,1:])
 X_test=preprocess(data_test.iloc[:,1:])
