@@ -4,6 +4,7 @@ from keras.utils import np_utils
 from keras.callbacks import ReduceLROnPlateau
 from keras.layers import Dense,Dropout,Flatten,Conv2D,MaxPool2D
 from keras.optimizers import RMSprop
+from keras.models import Model
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,6 +40,23 @@ def evaluate(X_pred_label,y_test_label):
         recall=TP/(TP+FN)
         end.loc[i]=np.array([recall,precise,2*precise*recall/(precise+recall)])
     return end
+    
+def ROC_curve():
+    for i in range(10):
+        denf_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('denf').output)
+        y_score=denf_layer_model.predict(X_test)[:,i]
+        fpr, tpr, thresholds = metrics.roc_curve(1*(np.argmax(y_test, axis=1)==i),y_score)
+        roc_auc=metrics.auc(fpr, tpr)
+        plt.clf()
+        plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.0])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.legend(loc="lower right")
+        plt.savefig('%d_ROC.png'%i)
+        plt.show()
    
 #数据导入与合并
 try:
@@ -151,20 +169,12 @@ dl.add(Dropout(0.75))
 # dl.add(Dense(units=40, activation="relu", kernel_initializer="normal",name="den2"))
 # dl.add(Dropout(0.5))
 
-dl.add(Dense(units=10, activation="softmax", kernel_initializer="normal",name="den3"))
+dl.add(Dense(units=10, activation="softmax", kernel_initializer="normal",name="denf"))
 dl.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
 dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=800,verbose=2,callbacks=[learning_rate_reduction])
 
 print(dl.summary())
 
 pd.crosstab(data_test.iloc[:,0],dl.predict_classes(X_test),rownames=['label'],colnames=['predict'])
-
-from keras.models import Model
-den3_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('den3').output)
-X_test = den3_layer_model.predict(X_test)
-X_train = den3_layer_model.predict(X_train)
-
-conv_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('conv').output)
-conv_output = conv_layer_model.predict(X_test)
-print(conv_output.shape)
-print(conv_output[0])
+evaluate(dl.predict_classes(X_test),data_test.iloc[:,0])
+ROC_curve()
