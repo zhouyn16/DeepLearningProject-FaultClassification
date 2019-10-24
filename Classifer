@@ -1,13 +1,15 @@
 #导入
 from keras.models import Sequential
 from keras.utils import np_utils
-from keras.callbacks import ReduceLROnPlateau
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
 from keras.layers import Dense,Dropout,Flatten,Conv2D,MaxPool2D
 from keras.optimizers import RMSprop
 from keras.models import Model
+from sklearn import metrics
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import sklearn as sk
 
 ###预定义
 train_each=80
@@ -45,7 +47,7 @@ def ROC_curve():
     for i in range(10):
         denf_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('denf').output)
         y_score=denf_layer_model.predict(X_test)[:,i]
-        fpr, tpr, thresholds = metrics.roc_curve(1*(np.argmax(y_test, axis=1)==i),y_score)
+        fpr, tpr, thresholds = sk.metrics.roc_curve(1*(np.argmax(y_test, axis=1)==i),y_score)
         roc_auc=metrics.auc(fpr, tpr)
         plt.clf()
         plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
@@ -57,8 +59,8 @@ def ROC_curve():
         plt.legend(loc="lower right")
         plt.savefig('%d_ROC.png'%i)
         plt.show()
-   
-#数据导入与合并
+        
+###数据导入与合并
 try:
     data_train=pd.read_csv('数据/repeat%dtrain.csv'%repeat,index_col=0,engine='python')
     data_test=pd.read_csv('数据/repeat%dtest.csv'%repeat,index_col=0,engine='python')
