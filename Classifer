@@ -104,45 +104,150 @@ except:
     data_test.to_csv('数据/repeat%dtest.csv'%repeat)
 
 ###训练集与测试集
-data_train=data_train
-data_test=data_test
-data_train=data_train.sample(frac=1.0).reset_index(drop=True)
-X_train=preprocess(data_train.iloc[:,1:])
-X_test=preprocess(data_test.iloc[:,1:])
-y_train=np_utils.to_categorical(data_train.iloc[:,0])
-y_test=np_utils.to_categorical(data_test.iloc[:,0])
+data_train_0out=data_train[data_train.kind!=0]
+data_test_0out=data_test[data_test.kind!=0]
+data_train_0out=data_train_0out.sample(frac=1.0).reset_index(drop=True)
+data_test_0out=data_test_0out.reset_index(drop=True)
+kind_147=[]
+kind_123=[]
+for i in range(data_train_0out.shape[0]):
+    this=data_train_0out.kind[i]
+    if this in [1,2,3]:
+        kind_123.append(0)
+    if this in [4,5,6]:
+        kind_123.append(1)
+    if this in [7,8,9]:
+        kind_123.append(2)
+    if this in [1,4,7]:
+        kind_147.append(0)
+    if this in [2,5,8]:
+        kind_147.append(1)
+    if this in [3,6,9]:
+        kind_147.append(2)
+data_train_123=data_train_0out.drop('kind',axis=1)
+data_train_123.insert(0,'kind',kind_123)
+data_train_147=data_train_0out.drop('kind',axis=1)
+data_train_147.insert(0,'kind',kind_147)
+kind_147=[]
+kind_123=[]
+for i in range(data_test_0out.shape[0]):
+    this=data_test_0out.kind[i]
+    if this in [1,2,3]:
+        kind_123.append(0)
+    if this in [4,5,6]:
+        kind_123.append(1)
+    if this in [7,8,9]:
+        kind_123.append(2)
+    if this in [1,4,7]:
+        kind_147.append(0)
+    if this in [2,5,8]:
+        kind_147.append(1)
+    if this in [3,6,9]:
+        kind_147.append(2)
+data_test_123=data_test_0out.drop('kind',axis=1)
+data_test_123.insert(0,'kind',kind_123)
+data_test_147=data_test_0out.drop('kind',axis=1)
+data_test_147.insert(0,'kind',kind_147)
+X_train_0out=preprocess(data_train_0out.iloc[:,1:])
+X_test_0out=preprocess(data_test_0out.iloc[:,1:])
+y_train_0out=np_utils.to_categorical(data_train_0out.iloc[:,0]-1)
+y_test_0out=np_utils.to_categorical(data_test_0out.iloc[:,0]-1)
+X_train_123=preprocess(data_train_123.iloc[:,1:])
+X_test_123=preprocess(data_test_123.iloc[:,1:])
+X_train_147=preprocess(data_train_147.iloc[:,1:])
+X_test_147=preprocess(data_test_147.iloc[:,1:])
+y_train_123=np_utils.to_categorical(data_train_123.iloc[:,0])
+y_test_123=np_utils.to_categorical(data_test_123.iloc[:,0])
+y_train_147=np_utils.to_categorical(data_train_147.iloc[:,0])
+y_test_147=np_utils.to_categorical(data_test_147.iloc[:,0])
 
 ###mixup
-X_train_mixup_result=X_train
-y_train_mixup_result=y_train
+X_train_0out_mixup_result=X_train_0out
+y_train_0out_mixup_result=y_train_0out
 for i in range(mixup_num):
-    beta=np.random.beta(1,1,X_train.shape[0]).reshape(X_train.shape[0],1)
-    data_train_mixup=data_train.sample(frac=1.0).reset_index(drop=True)
-    X_train_mixup=preprocess(data_train_mixup.iloc[:,1:])
-    y_train_mixup=np_utils.to_categorical(data_train_mixup.iloc[:,0])
-    X_train_mixup=beta*X_train_mixup+(1-beta)*X_train
-    y_train_mixup=beta*y_train_mixup+(1-beta)*y_train
-    X_train_mixup_result=pd.concat([X_train_mixup_result,X_train_mixup])
-    y_train_mixup_result=np.vstack([y_train_mixup_result,y_train_mixup])
-X_train=X_train_mixup_result
-y_train=y_train_mixup_result
+    beta=np.random.beta(1,1,X_train_0out.shape[0]).reshape(X_train_0out.shape[0],1)
+    data_train_0out_mixup=data_train_0out.sample(frac=1.0).reset_index(drop=True)
+    X_train_0out_mixup=preprocess(data_train_0out_mixup.iloc[:,1:])
+    y_train_0out_mixup=np_utils.to_categorical(data_train_0out_mixup.iloc[:,0]-1)
+    X_train_0out_mixup=beta*X_train_0out_mixup+(1-beta)*X_train_0out
+    y_train_0out_mixup=beta*y_train_0out_mixup+(1-beta)*y_train_0out
+    X_train_0out_mixup_result=pd.concat([X_train_0out_mixup_result,X_train_0out_mixup])
+    y_train_0out_mixup_result=np.vstack([y_train_0out_mixup_result,y_train_0out_mixup])
+X_train_0out=X_train_0out_mixup_result
+y_train_0out=y_train_0out_mixup_result
 ###
 
 ###高斯噪音
-X_train_gauss_result=X_train
-y_train_gauss_result=y_train
+X_train_0out_gauss_result=X_train_0out
+y_train_0out_gauss_result=y_train_0out
 for i in range(gauss_num):
-    gauss=np.random.normal(0,var,[X_train.shape[0],X_train.shape[1]])
-    X_train_gauss=gauss+X_train
-    X_train_gauss_result=pd.concat([X_train_gauss_result,X_train_gauss])
-    y_train_gauss_result=np.vstack([y_train_gauss_result,y_train])
-X_train=X_train_gauss_result
-y_train=y_train_gauss_result
+    gauss=np.random.normal(0,var,[X_train_0out.shape[0],X_train_0out.shape[1]])
+    X_train_0out_gauss=gauss+X_train_0out
+    X_train_0out_gauss_result=pd.concat([X_train_0out_gauss_result,X_train_0out_gauss])
+    y_train_0out_gauss_result=np.vstack([y_train_0out_gauss_result,y_train_0out])
+X_train_0out=X_train_0out_gauss_result
+y_train_0out=y_train_0out_gauss_result
+###
+
+###mixup
+X_train_123_mixup_result=X_train_123
+y_train_123_mixup_result=y_train_123
+for i in range(mixup_num):
+    beta=np.random.beta(1,1,X_train_123.shape[0]).reshape(X_train_123.shape[0],1)
+    data_train_123_mixup=data_train_123.sample(frac=1.0).reset_index(drop=True)
+    X_train_123_mixup=preprocess(data_train_123_mixup.iloc[:,1:])
+    y_train_123_mixup=np_utils.to_categorical(data_train_123_mixup.iloc[:,0])
+    X_train_123_mixup=beta*X_train_123_mixup+(1-beta)*X_train_123
+    y_train_123_mixup=beta*y_train_123_mixup+(1-beta)*y_train_123
+    X_train_123_mixup_result=pd.concat([X_train_123_mixup_result,X_train_123_mixup])
+    y_train_123_mixup_result=np.vstack([y_train_123_mixup_result,y_train_123_mixup])
+X_train_123=X_train_123_mixup_result
+y_train_123=y_train_123_mixup_result
+###
+
+###高斯噪音
+X_train_123_gauss_result=X_train_123
+y_train_123_gauss_result=y_train_123
+for i in range(gauss_num):
+    gauss=np.random.normal(0,var,[X_train_123.shape[0],X_train_123.shape[1]])
+    X_train_123_gauss=gauss+X_train_123
+    X_train_123_gauss_result=pd.concat([X_train_123_gauss_result,X_train_123_gauss])
+    y_train_123_gauss_result=np.vstack([y_train_123_gauss_result,y_train_123])
+X_train_123=X_train_123_gauss_result
+y_train_123=y_train_123_gauss_result
+###
+
+###mixup
+X_train_147_mixup_result=X_train_147
+y_train_147_mixup_result=y_train_147
+for i in range(mixup_num):
+    beta=np.random.beta(1,1,X_train_147.shape[0]).reshape(X_train_147.shape[0],1)
+    data_train_147_mixup=data_train_147.sample(frac=1.0).reset_index(drop=True)
+    X_train_147_mixup=preprocess(data_train_147_mixup.iloc[:,1:])
+    y_train_147_mixup=np_utils.to_categorical(data_train_147_mixup.iloc[:,0])
+    X_train_147_mixup=beta*X_train_147_mixup+(1-beta)*X_train_147
+    y_train_147_mixup=beta*y_train_147_mixup+(1-beta)*y_train_147
+    X_train_147_mixup_result=pd.concat([X_train_147_mixup_result,X_train_147_mixup])
+    y_train_147_mixup_result=np.vstack([y_train_147_mixup_result,y_train_147_mixup])
+X_train_147=X_train_147_mixup_result
+y_train_147=y_train_147_mixup_result
+###
+
+###高斯噪音
+X_train_147_gauss_result=X_train_147
+y_train_147_gauss_result=y_train_147
+for i in range(gauss_num):
+    gauss=np.random.normal(0,var,[X_train_147.shape[0],X_train_147.shape[1]])
+    X_train_147_gauss=gauss+X_train_147
+    X_train_147_gauss_result=pd.concat([X_train_147_gauss_result,X_train_147_gauss])
+    y_train_147_gauss_result=np.vstack([y_train_147_gauss_result,y_train_147])
+X_train_147=X_train_147_gauss_result
+y_train_147=y_train_147_gauss_result
 ###
 
 ###卷积网络
-X_train=X_train.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
-X_test=X_test.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+X_train_123=X_train_123.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+X_test_123=X_test_123.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
 ###
 
 ###学习率调整/提前终止
@@ -150,33 +255,109 @@ learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=3, 
 EarlyStop=EarlyStopping(monitor='val_loss', patience=5)
 ###
 
-dl=Sequential()
+dl_123=Sequential()
 
 ###卷积网络
-dl.add(Conv2D(filters=32, kernel_size=(1,10), padding='Valid', activation='relu',input_shape=(1,repeat,3),name="conv1"))
-dl.add(MaxPool2D(pool_size=(1,4), strides=(1,1),name="pool1"))
-dl.add(Dropout(0.75))
-dl.add(Flatten())
-dl.add(Dense(units=500, activation="relu", kernel_initializer="normal",name="den1"))
-dl.add(Dropout(0.75))
+dl_123.add(Conv2D(filters=32, kernel_size=(1,10), padding='Valid', activation='relu',input_shape=(1,repeat,3)))
+dl_123.add(MaxPool2D(pool_size=(1,4), strides=(1,1)))
+dl_123.add(Dropout(0.75))
+dl_123.add(Flatten())
+dl_123.add(Dense(units=500, activation="relu", kernel_initializer="normal"))
+dl_123.add(Dropout(0.75))
 ###
 
-# ###非卷积网络
-# dl.add(Dense(units=500, input_dim=3*repeat, activation="relu", kernel_initializer="normal"))
-# dl.add(Dropout(0.25))
-# dl.add(Dense(units=500, activation="relu", kernel_initializer="normal"))
-# dl.add(Dropout(0.25))
-# ###
+dl_123.add(Dense(units=3, activation="softmax", kernel_initializer="normal",name="denf_123"))
+dl_123.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
+dl_123.fit(X_train_123,y_train_123,validation_data=(X_test_123,y_test_123),epochs=100,batch_size=800,verbose=2,callbacks=[EarlyStop])
 
-# dl.add(Dense(units=40, activation="relu", kernel_initializer="normal",name="den2"))
-# dl.add(Dropout(0.5))
+###卷积网络
+X_train_147=X_train_147.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+X_test_147=X_test_147.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+###
 
-dl.add(Dense(units=10, activation="softmax", kernel_initializer="normal",name="denf"))
-dl.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
-dl.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=800,verbose=2,callbacks=[EarlyStop])
+###学习率调整/提前终止
+learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=3, verbose=1, factor=0.5, min_lr=0.00001)
+EarlyStop=EarlyStopping(monitor='val_loss', patience=5)
+###
 
-print(dl.summary())
+dl_147=Sequential()
 
-pd.crosstab(data_test.iloc[:,0],dl.predict_classes(X_test),rownames=['label'],colnames=['predict'])
-evaluate(dl.predict_classes(X_test),data_test.iloc[:,0])
-ROC_curve()
+###卷积网络
+dl_147.add(Conv2D(filters=32, kernel_size=(1,10), padding='Valid', activation='relu',input_shape=(1,repeat,3)))
+dl_147.add(MaxPool2D(pool_size=(1,4), strides=(1,1)))
+dl_147.add(Dropout(0.75))
+dl_147.add(Flatten())
+dl_147.add(Dense(units=500, activation="relu", kernel_initializer="normal"))
+dl_147.add(Dropout(0.75))
+###
+
+dl_147.add(Dense(units=3, activation="softmax", kernel_initializer="normal",name="denf_147"))
+dl_147.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
+dl_147.fit(X_train_147,y_train_147,validation_data=(X_test_147,y_test_147),epochs=100,batch_size=800,verbose=2,callbacks=[EarlyStop])
+
+###合成网络
+X_train_0out=X_train_0out.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+X_test_0out=X_test_0out.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+###
+
+###数据合成
+denf_123_layer_model = Model(inputs=dl_123.input,outputs=dl_123.get_layer('denf_123').output)
+predict_123=denf_123_layer_model.predict(X_train_0out)
+denf_147_layer_model = Model(inputs=dl_147.input,outputs=dl_147.get_layer('denf_147').output)
+predict_147=denf_147_layer_model.predict(X_train_0out)
+X_train_0out_use=np.hstack([predict_123,predict_147])
+denf_123_layer_model = Model(inputs=dl_123.input,outputs=dl_123.get_layer('denf_123').output)
+predict_123=denf_123_layer_model.predict(X_test_0out)
+denf_147_layer_model = Model(inputs=dl_147.input,outputs=dl_147.get_layer('denf_147').output)
+predict_147=denf_147_layer_model.predict(X_test_0out)
+X_test_0out_use=np.hstack([predict_123,predict_147])
+###
+
+###学习率调整/提前终止
+learning_rate_reduction = ReduceLROnPlateau(monitor='val_accuracy', patience=3, verbose=1, factor=0.5, min_lr=0.00001)
+EarlyStop=EarlyStopping(monitor='val_loss', patience=5)
+###
+
+dl_all=Sequential()
+
+###卷积网络
+# dl_all.add(Conv2D(filters=32, kernel_size=(1,10), padding='Valid', activation='relu',input_shape=(1,repeat,3)))
+# dl_all.add(MaxPool2D(pool_size=(1,4), strides=(1,1)))
+# dl_all.add(Dropout(0.75))
+# dl_all.add(Flatten())
+dl_all.add(Dense(units=32, activation="relu", kernel_initializer="normal",input_dim=6))
+dl_all.add(Dropout(0.25))
+dl_all.add(Dense(units=32, activation="relu", kernel_initializer="normal"))
+dl_all.add(Dropout(0.25))
+###
+
+dl_all.add(Dense(units=9, activation="softmax", kernel_initializer="normal",name="denf_all"))
+dl_all.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
+dl_all.fit(X_train_0out_use,y_train_0out,validation_data=(X_test_0out_use,y_test_0out),epochs=100,batch_size=800,verbose=2,callbacks=[EarlyStop])
+
+X_test=preprocess(data_test.iloc[:,1:])
+y_test=np_utils.to_categorical(data_test.iloc[:,0])
+X_test_1_9=X_test.values.reshape(-1,repeat,3,1).transpose(0,3,1,2)
+X_test_01=data_test.iloc[:,1:].values.reshape(-1,repeat,3).transpose(0,2,1)
+
+predict_0out=dl_147.predict_classes(X_test_1_9)+dl_123.predict_classes(X_test_1_9)*3+1
+
+predict_0out=dl_all.predict_classes(np.hstack([dl_123.predict(X_test_1_9),dl_147.predict(X_test_1_9)]))+1
+
+predict_0=[]
+for idx in range(len(X_test_01)):
+    list_0=[X_test_01[idx][0][a+1]-X_test_01[idx][0][a] for a in range(len(X_test_01[idx][0])-1)]
+    list_0_1=[list_0[a+1]-list_0[a] for a in range(len(list_0)-1)]
+    if np.var(list_0_1)*100<0.3:##0.1--0.5
+        predict_0.append(0)
+        continue
+    predict_0.append(1)
+predict_0=np.array(predict_0)
+
+predict_merge=predict_0out*predict_0
+
+pd.crosstab(data_test.iloc[:,0],predict_merge,rownames=['label'],colnames=['predict'])
+
+evaluate(predict_merge,data_test.iloc[:,0])
+
+sum(predict_merge==data_test.iloc[:,0])/10000
