@@ -42,22 +42,19 @@ def evaluate(X_pred_label,y_test_label):
         end.loc[i]=np.array([recall,precise,2*precise*recall/(precise+recall)])
     return end
     
-def ROC_curve():
-    for i in range(10):
-        denf_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('denf').output)
-        y_score=denf_layer_model.predict(X_test)[:,i]
-        fpr, tpr, thresholds = sk.metrics.roc_curve(1*(np.argmax(y_test, axis=1)==i),y_score)
-        roc_auc=metrics.auc(fpr, tpr)
-        plt.clf()
-        plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
-        plt.plot([0, 1], [0, 1], 'k--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.0])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.legend(loc="lower right")
-        plt.savefig('%d_ROC.png'%i)
-        plt.show()
+def ROC_curve(name,y,y_score):
+    fpr, tpr, thresholds = metrics.roc_curve(y,y_score)
+    roc_auc=metrics.auc(fpr, tpr)
+    plt.clf()
+    plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], 'k--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.0])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend(loc="lower right")
+    plt.savefig('%s_ROC.png'%name)
+    plt.show()
         
 ###数据导入与合并
 try:
@@ -179,4 +176,6 @@ print(dl.summary())
 
 pd.crosstab(data_test.iloc[:,0],dl.predict_classes(X_test),rownames=['label'],colnames=['predict'])
 evaluate(dl.predict_classes(X_test),data_test.iloc[:,0])
-ROC_curve()
+denf_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('denf').output)
+for i in range(10):
+    ROC_curve('%d'%i,1*(np.argmax(y_test, axis=1)==i),denf_layer_model.predict(X_test)[:,i])
