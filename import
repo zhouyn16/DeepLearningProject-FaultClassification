@@ -1,0 +1,12 @@
+#导入
+from keras.models import Sequential
+from keras.utils import np_utils
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
+from keras.layers import Dense,Dropout,Flatten,Conv2D,MaxPool2D
+from keras.optimizers import RMSprop
+from keras.models import Model
+from sklearn import metrics
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import random as rd
