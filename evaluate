@@ -1,0 +1,5 @@
+print(pd.crosstab(data_test.iloc[:,0],predict_all,rownames=['label'],colnames=['predict']))
+print(evaluate(predict_all,data_test.iloc[:,0]))
+denf_layer_model = Model(inputs=dl.input,outputs=dl.get_layer('denf').output)
+for i in range(10):
+    ROC_curve('%d'%i,1*(data_test.kind==i),score_all[:,i])
