@@ -1,0 +1,52 @@
+###数据导入与合并
+try:
+    data_train=pd.read_csv('数据/repeat%dtrain.csv'%repeat,index_col=0,engine='python')
+    data_test=pd.read_csv('数据/repeat%dtest.csv'%repeat,index_col=0,engine='python')
+except:
+    columns_repeat=['kind']
+    for re in range(1,repeat+1):
+        columns_repeat+=['De%d'%re,'Fe%d'%re,'Ba%d'%re]+['De%dstd'%re,'Fe%dstd'%re,'Ba%dstd'%re]
+    data_train=pd.DataFrame(columns=columns_repeat)
+    data_test=pd.DataFrame(columns=columns_repeat)
+    print('数据导入：',end=' ')
+    for i in range(10):
+        data_read_train=pd.read_csv('数据/%dtrain.csv'%i,index_col=0,engine='python')
+        data_read_test=pd.read_csv('数据/%dtest.csv'%i,index_col=0,engine='python')
+
+        ###NA填充0
+        if i==0:
+            data_read_train.insert(2,'Ba',0)
+            data_read_test.insert(2,'Ba',0)
+        ###
+        
+        ###填充std
+        data_read_train.insert(3,'De%dstd'%re,np.std(data_read_train.iloc[:,0]))
+        data_read_test.insert(3,'De%dstd'%re,np.std(data_read_test.iloc[:,0]))
+        data_read_train.insert(4,'Fe%dstd'%re,np.std(data_read_train.iloc[:,1]))
+        data_read_test.insert(4,'Fe%dstd'%re,np.std(data_read_test.iloc[:,1]))
+        data_read_train.insert(5,'Ba%dstd'%re,np.std(data_read_train.iloc[:,2]))
+        data_read_test.insert(5,'Ba%dstd'%re,np.std(data_read_test.iloc[:,2]))
+        ###
+
+        ###重复取样
+        data_read_train_repeat=data_read_train.copy()
+        long=data_read_train.shape[0]
+        for re in range(1,repeat):
+            data_read_train_repeat=pd.concat([data_read_train_repeat.iloc[0:long,:],data_read_train.iloc[re:long,:].reset_index(drop=1)],axis=1)
+        data_read_train=data_read_train_repeat.iloc[0:long-repeat+1]
+        data_read_test_repeat=data_read_test.copy()
+        long=data_read_test.shape[0]
+        for re in range(1,repeat):
+            data_read_test_repeat=pd.concat([data_read_test_repeat.iloc[0:long,:],data_read_test.iloc[re:long,:].reset_index(drop=1)],axis=1)
+        data_read_test=data_read_test_repeat.iloc[0:long-repeat+1]
+        ###
+
+        data_read_train.insert(0,'kind',i)
+        data_read_test.insert(0,'kind',i)
+        data_read_train.columns=columns_repeat
+        data_read_test.columns=columns_repeat
+        data_train=pd.concat([data_train,data_read_train.iloc[randomint:train_each+randomint,:]])
+        data_test=pd.concat([data_test,data_read_test.iloc[randomint:test_each+randomint,:]])
+        print((i+1)/10,end=' ')
+#     data_train.to_csv('数据/repeat%dtrain.csv'%repeat)
+#     data_test.to_csv('数据/repeat%dtest.csv'%repeat)
